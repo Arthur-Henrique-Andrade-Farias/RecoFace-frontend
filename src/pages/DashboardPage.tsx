@@ -61,14 +61,14 @@ export default function DashboardPage() {
 
   useEffect(() => {
     Promise.all([
-      logsApi.stats().then((r) => setStats(r.data)),
-      logsApi.list({ limit: 10 }).then((r) => setRecentLogs(r.data)),
-      camerasApi.list().then((r) => setCameras(r.data)),
+      logsApi.stats().then((r) => setStats(r.data)).catch(() => {}),
+      logsApi.list({ limit: 10 }).then((r) => setRecentLogs(r.data)).catch(() => {}),
+      camerasApi.list().then((r) => setCameras(r.data)).catch(() => {}),
     ]).finally(() => setPageLoading(false));
 
     const interval = setInterval(() => {
-      logsApi.stats().then((r) => setStats(r.data));
-      logsApi.list({ limit: 10 }).then((r) => setRecentLogs(r.data));
+      logsApi.stats().then((r) => setStats(r.data)).catch(() => {});
+      logsApi.list({ limit: 10 }).then((r) => setRecentLogs(r.data)).catch(() => {});
     }, 5000);
     return () => clearInterval(interval);
   }, []);

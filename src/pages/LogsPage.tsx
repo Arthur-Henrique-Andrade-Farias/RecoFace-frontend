@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { logsApi, getPhotoUrl } from "../services/api";
-import { RecognitionLog } from "../types";
+import { logsApi, camerasApi, personsApi, getPhotoUrl, categoriesApi } from "../services/api";
+import { RecognitionLog, Camera, Person, PersonCategory } from "../types";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -12,39 +12,55 @@ import {
   PhotoIcon,
   XMarkIcon,
   FunnelIcon,
+  PencilIcon,
+  MagnifyingGlassIcon,
+  UserPlusIcon,
 } from "@heroicons/react/24/outline";
 import { useAuth } from "../context/AuthContext";
 
-const ROLE_LABELS: Record<string, string> = {
-  student: "Aluno",
-  teacher: "Professor(a)",
-  staff: "Funcionário(a)",
-  visitor: "Visitante",
-};
-
 export default function LogsPage() {
   const { user } = useAuth();
+  const canEdit = user?.role === "admin" || user?.role === "configurador";
+
   const [logs, setLogs] = useState<RecognitionLog[]>([]);
+  const [cameras, setCameras] = useState<Camera[]>([]);
+  const [persons, setPersons] = useState<Person[]>([]);
+  const [categories, setCategories] = useState<PersonCategory[]>([]);
+
   const [filter, setFilter] = useState<"all" | "recognized" | "alert">("all");
+  const [cameraFilter, setCameraFilter] = useState<number | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
 
+  // Edit log state
+  const [editLog, setEditLog] = useState<RecognitionLog | null>(null);
+  const [editPersonId, setEditPersonId] = useState<number | null>(null);
+  const [editNotes, setEditNotes] = useState("");
+  const [editSearch, setEditSearch] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
+
+  const categoryLabels = Object.fromEntries(categories.map((c) => [c.key, c.label]));
+
   const load = useCallback(async () => {
     const params: Record<string, unknown> = { limit: 200 };
     if (filter === "recognized") params.recognized = true;
     if (filter === "alert") params.recognized = false;
+    if (cameraFilter !== null) params.camera_id = cameraFilter;
     try {
       const res = await logsApi.list(params);
       setLogs(res.data);
     } finally {
       setPageLoading(false);
     }
-  }, [filter]);
+  }, [filter, cameraFilter]);
 
   useEffect(() => {
     load();
+    camerasApi.list().then((r) => setCameras(r.data)).catch(() => {});
+    personsApi.list().then((r) => setPersons(r.data)).catch(() => {});
+    categoriesApi.list().then((r) => setCategories(r.data)).catch(() => {});
   }, [load]);
 
   useEffect(() => {
@@ -63,6 +79,45 @@ export default function LogsPage() {
       setLoading(false);
     }
   };
+
+  // ─── Edit log ──────────────────────────────────────────────────────────────
+
+  const openEditLog = (log: RecognitionLog) => {
+    setEditLog(log);
+    setEditPersonId(log.person_id);
+    setEditNotes(log.notes ?? "");
+    setEditSearch("");
+  };
+
+  const handleSaveLog = async () => {
+    if (!editLog) return;
+    setEditSaving(true);
+    try {
+      const data: { person_id?: number; notes?: string } = {};
+      if (editPersonId !== editLog.person_id && editPersonId !== null) {
+        data.person_id = editPersonId;
+      }
+      if (editNotes !== (editLog.notes ?? "")) {
+        data.notes = editNotes;
+      }
+      if (Object.keys(data).length > 0) {
+        await logsApi.update(editLog.id, data);
+        load();
+      }
+      setEditLog(null);
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const filteredPersons = editSearch
+    ? persons.filter((p) => {
+        const q = editSearch.toLowerCase();
+        if (p.name.toLowerCase().includes(q)) return true;
+        const cd = p.custom_data ?? {};
+        return Object.values(cd).some((v) => v?.toLowerCase().includes(q));
+      })
+    : persons;
 
   const totalAlerts = logs.filter((l) => !l.recognized).length;
   const totalRecognized = logs.filter((l) => l.recognized && l.is_authorized).length;
@@ -125,21 +180,39 @@ export default function LogsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-2">
-        <FunnelIcon className="w-4 h-4 text-slate-400" />
-        {(["all", "recognized", "alert"] as const).map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-              filter === f
-                ? "bg-navy-600 text-white"
-                : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
-            }`}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="flex items-center gap-2">
+          <FunnelIcon className="w-4 h-4 text-slate-400" />
+          {(["all", "recognized", "alert"] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                filter === f
+                  ? "bg-navy-600 text-white"
+                  : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+              }`}
+            >
+              {f === "all" ? "Todos" : f === "recognized" ? "Reconhecidos" : "Alertas"}
+            </button>
+          ))}
+        </div>
+
+        {/* Camera filter */}
+        <div className="sm:ml-auto">
+          <select
+            value={cameraFilter ?? ""}
+            onChange={(e) => setCameraFilter(e.target.value ? Number(e.target.value) : null)}
+            className="input-field text-sm py-1.5"
           >
-            {f === "all" ? "Todos" : f === "recognized" ? "Reconhecidos" : "Alertas"}
-          </button>
-        ))}
+            <option value="">Todas as câmeras</option>
+            {cameras.map((cam) => (
+              <option key={cam.id} value={cam.id}>
+                {cam.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Logs table */}
@@ -170,24 +243,12 @@ export default function LogsPage() {
             <table className="w-full">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-100">
-                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">
-                    Status
-                  </th>
-                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">
-                    Pessoa
-                  </th>
-                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">
-                    Câmera
-                  </th>
-                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">
-                    Confiança
-                  </th>
-                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">
-                    Data/Hora
-                  </th>
-                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">
-                    Foto
-                  </th>
+                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Status</th>
+                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Pessoa</th>
+                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Câmera</th>
+                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Confiança</th>
+                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Data/Hora</th>
+                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -217,7 +278,7 @@ export default function LogsPage() {
                       </p>
                       {log.person_role && (
                         <p className="text-xs text-slate-400">
-                          {ROLE_LABELS[log.person_role] ?? log.person_role}
+                          {categoryLabels[log.person_role] ?? log.person_role}
                         </p>
                       )}
                     </td>
@@ -257,16 +318,26 @@ export default function LogsPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      {log.photo_path ? (
-                        <button
-                          onClick={() => setSelectedPhoto(getPhotoUrl(log.photo_path!))}
-                          className="text-navy-600 hover:text-navy-700 transition-colors"
-                        >
-                          <PhotoIcon className="w-5 h-5" />
-                        </button>
-                      ) : (
-                        <span className="text-slate-300">—</span>
-                      )}
+                      <div className="flex items-center gap-1">
+                        {log.photo_path && (
+                          <button
+                            onClick={() => setSelectedPhoto(getPhotoUrl(log.photo_path!))}
+                            className="p-1 text-navy-600 hover:text-navy-700 hover:bg-slate-100 rounded transition-colors"
+                            title="Ver foto"
+                          >
+                            <PhotoIcon className="w-4 h-4" />
+                          </button>
+                        )}
+                        {canEdit && (
+                          <button
+                            onClick={() => openEditLog(log)}
+                            className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                            title="Editar registro"
+                          >
+                            <PencilIcon className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -289,11 +360,129 @@ export default function LogsPage() {
             >
               <XMarkIcon className="w-4 h-4" />
             </button>
-            <img
-              src={selectedPhoto}
-              alt="Captura"
-              className="w-full rounded-xl shadow-2xl"
-            />
+            <img src={selectedPhoto} alt="Captura" className="w-full rounded-xl shadow-2xl" />
+          </div>
+        </div>
+      )}
+
+      {/* Edit log modal */}
+      {editLog && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 sticky top-0 bg-white rounded-t-2xl z-10">
+              <h2 className="font-bold text-slate-800">Editar Registro</h2>
+              <button onClick={() => setEditLog(null)} className="text-slate-400 hover:text-slate-600">
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="px-6 py-4 space-y-4">
+              {/* Log photo */}
+              {editLog.photo_path && (
+                <div className="rounded-xl overflow-hidden border border-slate-200">
+                  <img
+                    src={getPhotoUrl(editLog.photo_path)}
+                    alt="Captura do log"
+                    className="w-full h-48 object-cover"
+                  />
+                </div>
+              )}
+
+              {/* Current info */}
+              <div className="flex items-center gap-3 text-sm text-slate-500">
+                <span>
+                  {format(new Date(editLog.timestamp), "dd/MM/yyyy 'às' HH:mm:ss", { locale: ptBR })}
+                </span>
+                <span>|</span>
+                <span>{editLog.camera_name ?? "Câmera desconhecida"}</span>
+              </div>
+
+              {/* Person assignment */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <UserPlusIcon className="w-4 h-4 inline mr-1" />
+                  Vincular pessoa
+                </label>
+
+                <div className="relative mb-2">
+                  <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    className="input-field pl-9 text-sm"
+                    placeholder="Buscar por nome ou matrícula..."
+                    value={editSearch}
+                    onChange={(e) => setEditSearch(e.target.value)}
+                  />
+                </div>
+
+                <div className="border border-slate-200 rounded-xl max-h-48 overflow-y-auto divide-y divide-slate-100">
+                  <button
+                    onClick={() => setEditPersonId(null)}
+                    className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                      editPersonId === null
+                        ? "bg-blue-50 text-blue-700 font-medium"
+                        : "text-slate-500 hover:bg-slate-50"
+                    }`}
+                  >
+                    Nenhuma pessoa (desconhecido)
+                  </button>
+
+                  {filteredPersons.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => setEditPersonId(p.id)}
+                      className={`w-full text-left px-3 py-2 flex items-center gap-3 transition-colors ${
+                        editPersonId === p.id
+                          ? "bg-blue-50 text-blue-700"
+                          : "hover:bg-slate-50"
+                      }`}
+                    >
+                      {p.photo_path ? (
+                        <img src={getPhotoUrl(p.photo_path)} alt="" className="w-8 h-8 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-400">
+                          {p.name.charAt(0)}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{p.name}</p>
+                        <p className="text-xs text-slate-400">
+                          {categoryLabels[p.role] ?? p.role}
+                        </p>
+                      </div>
+                      {editPersonId === p.id && (
+                        <CheckCircleIcon className="w-5 h-5 text-blue-500 flex-shrink-0" />
+                      )}
+                    </button>
+                  ))}
+
+                  {filteredPersons.length === 0 && (
+                    <p className="px-3 py-4 text-sm text-slate-400 text-center">Nenhuma pessoa encontrada</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Observações</label>
+                <textarea
+                  className="input-field text-sm"
+                  rows={2}
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  placeholder="Adicionar observação..."
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-2">
+                <button onClick={handleSaveLog} disabled={editSaving} className="btn-primary flex-1">
+                  {editSaving ? "Salvando..." : "Salvar"}
+                </button>
+                <button onClick={() => setEditLog(null)} className="btn-secondary flex-1">
+                  Cancelar
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

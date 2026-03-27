@@ -10,18 +10,19 @@ import {
   Bars3Icon,
   ShieldCheckIcon,
   UserGroupIcon,
+  Cog6ToothIcon,
 } from "@heroicons/react/24/outline";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Administrador",
-  vigia: "Vigia",
-  porteiro: "Porteiro",
+  configurador: "Configurador",
+  visualizador: "Visualizador",
 };
 
 const ROLE_COLORS: Record<string, string> = {
   admin: "bg-red-500",
-  vigia: "bg-yellow-500",
-  porteiro: "bg-blue-400",
+  configurador: "bg-yellow-500",
+  visualizador: "bg-blue-400",
 };
 
 export default function Layout() {
@@ -41,13 +42,16 @@ export default function Layout() {
     { to: "/dashboard", label: "Painel", Icon: HomeIcon },
     { to: "/cameras", label: "Câmeras", Icon: VideoCameraIcon },
     // Persons: admin & vigia
-    ...(role === "admin" || role === "vigia"
+    ...(role === "admin" || role === "configurador"
       ? [{ to: "/persons", label: "Pessoas", Icon: UsersIcon }]
       : []),
     { to: "/logs", label: "Logs", Icon: ClipboardDocumentListIcon },
-    // Users: admin only
+    // Admin only
     ...(role === "admin"
-      ? [{ to: "/users", label: "Usuários", Icon: UserGroupIcon }]
+      ? [
+          { to: "/settings", label: "Configurações", Icon: Cog6ToothIcon },
+          { to: "/users", label: "Usuários", Icon: UserGroupIcon },
+        ]
       : []),
   ];
 
@@ -64,7 +68,7 @@ export default function Layout() {
         </div>
         <div>
           <h1 className="text-xl font-bold tracking-tight">RecoFace</h1>
-          <p className="text-xs text-navy-200 font-medium">Sistema Escolar</p>
+          <p className="text-xs text-navy-200 font-medium">{user?.org_name || "Sistema Escolar"}</p>
         </div>
       </div>
 

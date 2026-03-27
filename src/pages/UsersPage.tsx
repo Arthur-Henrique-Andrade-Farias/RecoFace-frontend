@@ -14,19 +14,19 @@ import {
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Administrador",
-  vigia: "Vigia",
-  porteiro: "Porteiro",
+  configurador: "Configurador",
+  visualizador: "Visualizador",
 };
 
 const ROLE_COLORS: Record<string, string> = {
   admin: "bg-red-100 text-red-700",
-  vigia: "bg-yellow-100 text-yellow-700",
-  porteiro: "bg-blue-100 text-blue-700",
+  configurador: "bg-yellow-100 text-yellow-700",
+  visualizador: "bg-blue-100 text-blue-700",
 };
 
 const ROLE_DESCRIPTIONS: Record<string, string> = {
-  vigia: "Pode ver câmeras, logs e gerenciar pessoas",
-  porteiro: "Pode apenas ver câmeras e logs",
+  configurador: "Pode ver câmeras, logs e gerenciar pessoas",
+  visualizador: "Pode apenas ver câmeras e logs",
 };
 
 export default function UsersPage() {
@@ -39,7 +39,7 @@ export default function UsersPage() {
     name: "",
     email: "",
     password: "",
-    role: "porteiro",
+    role: "visualizador",
   });
   const [error, setError] = useState("");
 
@@ -60,7 +60,7 @@ export default function UsersPage() {
     try {
       await authApi.createUser(form);
       setShowForm(false);
-      setForm({ name: "", email: "", password: "", role: "porteiro" });
+      setForm({ name: "", email: "", password: "", role: "visualizador" });
       load();
     } catch (err: any) {
       const detail = err.response?.data?.detail;
@@ -117,8 +117,8 @@ export default function UsersPage() {
             <p className="font-semibold">Tipos de conta</p>
             <ul className="mt-1 space-y-0.5 text-blue-700">
               <li><strong>Administrador</strong> — acesso total (criado apenas pelo banco de dados)</li>
-              <li><strong>Vigia</strong> — visualiza câmeras/logs e gerencia pessoas cadastradas</li>
-              <li><strong>Porteiro</strong> — visualiza câmeras e logs (somente leitura)</li>
+              <li><strong>Configurador</strong> — visualiza câmeras/logs, gerencia pessoas e edita logs</li>
+              <li><strong>Visualizador</strong> — visualiza câmeras e logs (somente leitura)</li>
             </ul>
           </div>
         </div>
@@ -157,7 +157,7 @@ export default function UsersPage() {
                   className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold ${
                     u.role === "admin"
                       ? "bg-red-500"
-                      : u.role === "vigia"
+                      : u.role === "configurador"
                       ? "bg-yellow-500"
                       : "bg-blue-500"
                   }`}
@@ -291,8 +291,8 @@ export default function UsersPage() {
                   value={form.role}
                   onChange={(e) => setForm({ ...form, role: e.target.value })}
                 >
-                  <option value="porteiro">Porteiro</option>
-                  <option value="vigia">Vigia</option>
+                  <option value="visualizador">Visualizador</option>
+                  <option value="configurador">Configurador</option>
                 </select>
                 <p className="text-xs text-slate-400 mt-1">
                   {ROLE_DESCRIPTIONS[form.role]}

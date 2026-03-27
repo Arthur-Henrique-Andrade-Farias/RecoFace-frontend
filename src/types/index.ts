@@ -2,20 +2,36 @@ export interface User {
   id: number;
   name: string;
   email: string;
-  role: "admin" | "vigia" | "porteiro";
+  role: "admin" | "configurador" | "visualizador";
   is_active: boolean;
+  org_name: string | null;
   created_at: string;
+}
+
+export interface PersonCategory {
+  id: number;
+  key: string;
+  label: string;
+  color: string;
+  sort_order: number;
+}
+
+export interface PersonField {
+  id: number;
+  key: string;
+  label: string;
+  required: boolean;
+  sort_order: number;
 }
 
 export interface Person {
   id: number;
   name: string;
   role: string;
-  department: string | null;
   photo_path: string | null;
   is_authorized: boolean;
-  registration_number: string | null;
   has_face_encoding: boolean;
+  custom_data: Record<string, string>;
   photo_count: number;
   created_at: string;
 }

@@ -28,13 +28,31 @@ export const authApi = {
   login: (email: string, password: string) =>
     api.post("/api/auth/login", { email, password }),
   me: () => api.get("/api/auth/me"),
-
-  // Admin-only: user management
   listUsers: () => api.get("/api/auth/users"),
   createUser: (data: { name: string; email: string; password: string; role: string }) =>
     api.post("/api/auth/users", data),
   toggleUser: (id: number) => api.patch(`/api/auth/users/${id}/toggle`),
   deleteUser: (id: number) => api.delete(`/api/auth/users/${id}`),
+};
+
+// ─── Categories ──────────────────────────────────────────────────────────────
+export const categoriesApi = {
+  list: () => api.get("/api/categories/"),
+  create: (data: { key: string; label: string; color: string; sort_order?: number }) =>
+    api.post("/api/categories/", data),
+  update: (id: number, data: { key: string; label: string; color: string; sort_order?: number }) =>
+    api.put(`/api/categories/${id}`, data),
+  delete: (id: number) => api.delete(`/api/categories/${id}`),
+};
+
+// ─── Person Fields ───────────────────────────────────────────────────────────
+export const fieldsApi = {
+  list: () => api.get("/api/fields/"),
+  create: (data: { key: string; label: string; required?: boolean; sort_order?: number }) =>
+    api.post("/api/fields/", data),
+  update: (id: number, data: { key: string; label: string; required?: boolean; sort_order?: number }) =>
+    api.put(`/api/fields/${id}`, data),
+  delete: (id: number) => api.delete(`/api/fields/${id}`),
 };
 
 // ─── Cameras ─────────────────────────────────────────────────────────────────
@@ -59,8 +77,6 @@ export const personsApi = {
     }),
   delete: (id: number) => api.delete(`/api/persons/${id}`),
   reloadEncodings: () => api.post("/api/persons/reload-encodings"),
-
-  // Multi-photo
   listPhotos: (personId: number) => api.get(`/api/persons/${personId}/photos`),
   addPhoto: (personId: number, formData: FormData) =>
     api.post(`/api/persons/${personId}/photos`, formData, {
@@ -74,6 +90,8 @@ export const personsApi = {
 export const logsApi = {
   list: (params?: { skip?: number; limit?: number; camera_id?: number; recognized?: boolean }) =>
     api.get("/api/logs/", { params }),
+  update: (id: number, data: { person_id?: number; notes?: string }) =>
+    api.patch(`/api/logs/${id}`, data),
   stats: () => api.get("/api/logs/stats"),
   clear: () => api.delete("/api/logs/clear"),
 };
