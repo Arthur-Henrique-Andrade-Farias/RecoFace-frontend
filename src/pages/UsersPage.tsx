@@ -93,8 +93,8 @@ export default function UsersPage() {
         await authApi.updateUser(editUser.id, {
           name: formName,
           role: formRole,
-          telegram_chat_id: formTelegramId || "",
-          telegram_active: formTelegramActive,
+          telegram_chat_id: formTelegramId.trim() || undefined,
+          telegram_active: formTelegramId.trim() ? formTelegramActive : false,
         });
       } else {
         await authApi.createUser({
