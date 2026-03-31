@@ -29,7 +29,10 @@ const ROLE_COLORS: Record<string, string> = {
 };
 
 export default function Layout() {
-  const { user, logout } = useAuth();
+  const { user, logout, branding } = useAuth();
+  const logoUrl = branding.brand_logo_url
+    ? `${process.env.REACT_APP_API_URL || "http://localhost:8000"}${branding.brand_logo_url}`
+    : null;
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -67,12 +70,16 @@ export default function Layout() {
     >
       {/* Logo */}
       <div className="flex items-center gap-3 px-6 py-6 border-b border-navy-500">
-        <div className="w-10 h-10 bg-blue-400 rounded-xl flex items-center justify-center flex-shrink-0">
-          <ShieldCheckIcon className="w-6 h-6 text-white" />
-        </div>
+        {logoUrl ? (
+          <img src={logoUrl} alt="" className="w-10 h-10 rounded-xl object-cover flex-shrink-0" />
+        ) : (
+          <div className="w-10 h-10 bg-blue-400 rounded-xl flex items-center justify-center flex-shrink-0">
+            <ShieldCheckIcon className="w-6 h-6 text-white" />
+          </div>
+        )}
         <div>
-          <h1 className="text-xl font-bold tracking-tight">RecoFace</h1>
-          <p className="text-xs text-navy-200 font-medium">{user?.org_name || "Sistema Escolar"}</p>
+          <h1 className="text-xl font-bold tracking-tight">{branding.brand_name}</h1>
+          <p className="text-xs text-navy-200 font-medium">{branding.brand_subtitle}</p>
         </div>
       </div>
 
@@ -149,7 +156,7 @@ export default function Layout() {
           <button onClick={() => setSidebarOpen(true)}>
             <Bars3Icon className="w-6 h-6" />
           </button>
-          <span className="font-bold text-lg">RecoFace</span>
+          <span className="font-bold text-lg">{branding.brand_name}</span>
         </header>
 
         <main className="flex-1 overflow-y-auto bg-slate-50">

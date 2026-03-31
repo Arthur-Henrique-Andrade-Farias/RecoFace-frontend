@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
-import { categoriesApi, fieldsApi } from "../services/api";
+import React, { useEffect, useState, useRef } from "react";
+import { categoriesApi, fieldsApi, authApi, getPhotoUrl } from "../services/api";
 import { PersonCategory, PersonField } from "../types";
+import { useAuth } from "../context/AuthContext";
 import {
   PlusIcon,
   TrashIcon,
@@ -10,6 +11,9 @@ import {
   Squares2X2Icon,
   CheckIcon,
   SwatchIcon,
+  PaintBrushIcon,
+  PhotoIcon,
+  ShieldCheckIcon,
 } from "@heroicons/react/24/outline";
 
 const COLORS = [
@@ -22,10 +26,59 @@ const COLORS = [
   { value: "indigo", label: "Índigo", bg: "bg-indigo-500" },
 ];
 
-type Tab = "categories" | "fields";
+type Tab = "branding" | "categories" | "fields";
 
 export default function SettingsPage() {
-  const [tab, setTab] = useState<Tab>("categories");
+  const { branding, refreshBranding } = useAuth();
+  const [tab, setTab] = useState<Tab>("branding");
+
+  // ─── Branding ──────────────────────────────────────────────────────────────
+  const [brandName, setBrandName] = useState(branding.brand_name);
+  const [brandSubtitle, setBrandSubtitle] = useState(branding.brand_subtitle);
+  const [brandSaving, setBrandSaving] = useState(false);
+  const [brandSuccess, setBrandSuccess] = useState("");
+  const [logoUploading, setLogoUploading] = useState(false);
+  const logoRef = useRef<HTMLInputElement>(null);
+
+  const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8000";
+  const logoUrl = branding.brand_logo_url ? `${API_BASE}${branding.brand_logo_url}` : null;
+
+  useEffect(() => {
+    setBrandName(branding.brand_name);
+    setBrandSubtitle(branding.brand_subtitle);
+  }, [branding]);
+
+  const handleBrandingSave = async () => {
+    setBrandSaving(true);
+    setBrandSuccess("");
+    try {
+      await authApi.updateBranding({ brand_name: brandName, brand_subtitle: brandSubtitle });
+      await refreshBranding();
+      setBrandSuccess("Configurações salvas!");
+      setTimeout(() => setBrandSuccess(""), 3000);
+    } catch {
+      alert("Erro ao salvar");
+    } finally {
+      setBrandSaving(false);
+    }
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("logo", file);
+      await authApi.uploadLogo(fd);
+      await refreshBranding();
+    } catch {
+      alert("Erro ao enviar logo");
+    } finally {
+      setLogoUploading(false);
+      if (logoRef.current) logoRef.current.value = "";
+    }
+  };
 
   // ─── Categories ────────────────────────────────────────────────────────────
   const [categories, setCategories] = useState<PersonCategory[]>([]);
@@ -163,13 +216,22 @@ export default function SettingsPage() {
       {/* Tabs */}
       <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
         <button
+          onClick={() => setTab("branding")}
+          className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+            tab === "branding" ? "bg-white text-navy-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          <PaintBrushIcon className="w-4 h-4" />
+          Aparência
+        </button>
+        <button
           onClick={() => setTab("categories")}
           className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
             tab === "categories" ? "bg-white text-navy-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
           }`}
         >
           <TagIcon className="w-4 h-4" />
-          Categorias de Pessoas
+          Categorias
         </button>
         <button
           onClick={() => setTab("fields")}
@@ -178,9 +240,106 @@ export default function SettingsPage() {
           }`}
         >
           <Squares2X2Icon className="w-4 h-4" />
-          Campos do Cadastro
+          Campos
         </button>
       </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════════ */}
+      {/* BRANDING TAB                                                          */}
+      {/* ═══════════════════════════════════════════════════════════════════════ */}
+      {tab === "branding" && (
+        <div className="space-y-4">
+          <p className="text-sm text-slate-500">
+            Personalize o nome, subtítulo e logo que aparecem na sidebar e na interface
+          </p>
+
+          <div className="card space-y-5">
+            {/* Logo */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Logo</label>
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-xl bg-slate-100 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                  {logoUrl ? (
+                    <img src={logoUrl} alt="Logo" className="w-full h-full object-cover rounded-xl" />
+                  ) : (
+                    <ShieldCheckIcon className="w-8 h-8 text-slate-300" />
+                  )}
+                </div>
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => logoRef.current?.click()}
+                    disabled={logoUploading}
+                    className="btn-secondary text-sm"
+                  >
+                    {logoUploading ? "Enviando..." : "Alterar logo"}
+                  </button>
+                  <p className="text-xs text-slate-400 mt-1">PNG, JPG, SVG - Recomendado: 200x200px</p>
+                  <input ref={logoRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+                </div>
+              </div>
+            </div>
+
+            {/* Name */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Nome do sistema</label>
+              <input
+                className="input-field"
+                value={brandName}
+                onChange={(e) => setBrandName(e.target.value)}
+                placeholder="RecoFace"
+              />
+              <p className="text-xs text-slate-400 mt-1">Aparece na sidebar e no topo das páginas</p>
+            </div>
+
+            {/* Subtitle */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Subtítulo</label>
+              <input
+                className="input-field"
+                value={brandSubtitle}
+                onChange={(e) => setBrandSubtitle(e.target.value)}
+                placeholder="Monitorando vidas"
+              />
+              <p className="text-xs text-slate-400 mt-1">Aparece abaixo do nome na sidebar</p>
+            </div>
+
+            {/* Preview */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Pré-visualização</label>
+              <div className="bg-navy-600 rounded-xl p-4 flex items-center gap-3 max-w-xs">
+                {logoUrl ? (
+                  <img src={logoUrl} alt="" className="w-10 h-10 rounded-xl object-cover" />
+                ) : (
+                  <div className="w-10 h-10 bg-blue-400 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <ShieldCheckIcon className="w-6 h-6 text-white" />
+                  </div>
+                )}
+                <div>
+                  <p className="text-white text-lg font-bold">{brandName || "RecoFace"}</p>
+                  <p className="text-navy-200 text-xs">{brandSubtitle || "Monitorando vidas"}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Save */}
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                onClick={handleBrandingSave}
+                disabled={brandSaving}
+                className="btn-primary"
+              >
+                {brandSaving ? "Salvando..." : "Salvar alterações"}
+              </button>
+              {brandSuccess && (
+                <span className="text-sm text-green-600 font-medium flex items-center gap-1">
+                  <CheckIcon className="w-4 h-4" /> {brandSuccess}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ═══════════════════════════════════════════════════════════════════════ */}
       {/* CATEGORIES TAB                                                        */}

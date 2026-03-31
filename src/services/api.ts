@@ -28,6 +28,13 @@ export const authApi = {
   login: (email: string, password: string) =>
     api.post("/api/auth/login", { email, password }),
   me: () => api.get("/api/auth/me"),
+  branding: () => api.get("/api/auth/branding"),
+  updateBranding: (data: { brand_name?: string; brand_subtitle?: string }) =>
+    api.put("/api/auth/branding", data),
+  uploadLogo: (formData: FormData) =>
+    api.post("/api/auth/branding/logo", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
   listUsers: () => api.get("/api/auth/users"),
   createUser: (data: { name: string; email: string; password: string; role: string }) =>
     api.post("/api/auth/users", data),
@@ -77,6 +84,8 @@ export const personsApi = {
     }),
   delete: (id: number) => api.delete(`/api/persons/${id}`),
   reloadEncodings: () => api.post("/api/persons/reload-encodings"),
+  createFromLog: (data: { log_id: number; name: string; role: string; is_authorized: boolean; custom_data?: Record<string, string> }) =>
+    api.post("/api/persons/from-log", data),
   listPhotos: (personId: number) => api.get(`/api/persons/${personId}/photos`),
   addPhoto: (personId: number, formData: FormData) =>
     api.post(`/api/persons/${personId}/photos`, formData, {

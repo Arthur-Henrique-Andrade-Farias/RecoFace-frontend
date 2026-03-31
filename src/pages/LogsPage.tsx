@@ -20,7 +20,7 @@ import { useAuth } from "../context/AuthContext";
 
 export default function LogsPage() {
   const { user } = useAuth();
-  const canEdit = user?.role === "admin" || user?.role === "configurador";
+  const canEdit = user?.role === "admin" || user?.role === "gerente" || user?.role === "configurador";
 
   const [logs, setLogs] = useState<RecognitionLog[]>([]);
   const [cameras, setCameras] = useState<Camera[]>([]);
@@ -40,6 +40,13 @@ export default function LogsPage() {
   const [editNotes, setEditNotes] = useState("");
   const [editSearch, setEditSearch] = useState("");
   const [editSaving, setEditSaving] = useState(false);
+
+  // Create person from log state
+  const [showNewPerson, setShowNewPerson] = useState(false);
+  const [newPersonName, setNewPersonName] = useState("");
+  const [newPersonRole, setNewPersonRole] = useState("student");
+  const [newPersonAuthorized, setNewPersonAuthorized] = useState(true);
+  const [newPersonSaving, setNewPersonSaving] = useState(false);
 
   const categoryLabels = Object.fromEntries(categories.map((c) => [c.key, c.label]));
 
@@ -87,6 +94,31 @@ export default function LogsPage() {
     setEditPersonId(log.person_id);
     setEditNotes(log.notes ?? "");
     setEditSearch("");
+    setShowNewPerson(false);
+    setNewPersonName("");
+    setNewPersonRole(categories[0]?.key ?? "student");
+    setNewPersonAuthorized(true);
+  };
+
+  const handleCreatePersonFromLog = async () => {
+    if (!editLog || !newPersonName.trim()) return;
+    setNewPersonSaving(true);
+    try {
+      await personsApi.createFromLog({
+        log_id: editLog.id,
+        name: newPersonName.trim(),
+        role: newPersonRole,
+        is_authorized: newPersonAuthorized,
+      });
+      // Refresh data
+      personsApi.list().then((r) => setPersons(r.data)).catch(() => {});
+      load();
+      setEditLog(null);
+    } catch (err: any) {
+      alert(err.response?.data?.detail || "Erro ao cadastrar pessoa");
+    } finally {
+      setNewPersonSaving(false);
+    }
   };
 
   const handleSaveLog = async () => {
@@ -459,6 +491,66 @@ export default function LogsPage() {
                     <p className="px-3 py-4 text-sm text-slate-400 text-center">Nenhuma pessoa encontrada</p>
                   )}
                 </div>
+
+                {/* Create new person button / form */}
+                {editLog?.photo_path && !showNewPerson && (
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPerson(true)}
+                    className="mt-2 w-full flex items-center justify-center gap-2 px-3 py-2 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-500 hover:border-navy-400 hover:text-navy-600 transition-colors"
+                  >
+                    <UserPlusIcon className="w-4 h-4" />
+                    Cadastrar nova pessoa com esta foto
+                  </button>
+                )}
+
+                {showNewPerson && (
+                  <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-xl space-y-3">
+                    <p className="text-xs font-semibold text-blue-800">Nova pessoa (usando foto deste log)</p>
+                    <input
+                      className="input-field text-sm"
+                      value={newPersonName}
+                      onChange={(e) => setNewPersonName(e.target.value)}
+                      placeholder="Nome completo *"
+                      required
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <select
+                        className="input-field text-sm"
+                        value={newPersonRole}
+                        onChange={(e) => setNewPersonRole(e.target.value)}
+                      >
+                        {categories.map((cat) => (
+                          <option key={cat.key} value={cat.key}>{cat.label}</option>
+                        ))}
+                      </select>
+                      <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={newPersonAuthorized}
+                          onChange={(e) => setNewPersonAuthorized(e.target.checked)}
+                          className="w-4 h-4 text-navy-600 rounded"
+                        />
+                        Autorizado
+                      </label>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleCreatePersonFromLog}
+                        disabled={newPersonSaving || !newPersonName.trim()}
+                        className="btn-primary flex-1 text-sm py-1.5"
+                      >
+                        {newPersonSaving ? "Salvando..." : "Cadastrar e vincular"}
+                      </button>
+                      <button
+                        onClick={() => setShowNewPerson(false)}
+                        className="btn-secondary text-sm py-1.5 px-3"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Notes */}

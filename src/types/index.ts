@@ -8,6 +8,12 @@ export interface User {
   created_at: string;
 }
 
+export interface Branding {
+  brand_name: string;
+  brand_subtitle: string;
+  brand_logo_url: string | null;
+}
+
 export interface PersonCategory {
   id: number;
   key: string;
