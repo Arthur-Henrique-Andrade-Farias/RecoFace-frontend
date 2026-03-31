@@ -36,7 +36,7 @@ export const authApi = {
       headers: { "Content-Type": "multipart/form-data" },
     }),
   listUsers: () => api.get("/api/auth/users"),
-  createUser: (data: { name: string; email: string; password: string; role: string }) =>
+  createUser: (data: { name: string; email: string; password: string; role: string; telegram_chat_id?: string; telegram_active?: boolean }) =>
     api.post("/api/auth/users", data),
   updateUser: (id: number, data: { name?: string; role?: string; telegram_chat_id?: string; telegram_active?: boolean }) =>
     api.put(`/api/auth/users/${id}`, data),

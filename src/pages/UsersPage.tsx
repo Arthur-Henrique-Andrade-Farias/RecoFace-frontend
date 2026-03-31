@@ -102,6 +102,8 @@ export default function UsersPage() {
           email: formEmail,
           password: formPassword,
           role: formRole,
+          telegram_chat_id: formTelegramId.trim() || undefined,
+          telegram_active: formTelegramId.trim() ? formTelegramActive : false,
         });
       }
       setShowForm(false);
