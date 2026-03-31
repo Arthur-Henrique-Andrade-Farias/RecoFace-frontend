@@ -10,6 +10,7 @@ import PersonsPage from "./pages/PersonsPage";
 import LogsPage from "./pages/LogsPage";
 import UsersPage from "./pages/UsersPage";
 import SettingsPage from "./pages/SettingsPage";
+import ReportsPage from "./pages/ReportsPage";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -62,16 +63,24 @@ export default function App() {
               <Route
                 path="persons"
                 element={
-                  <RoleRoute allowed={["admin", "configurador"]}>
+                  <RoleRoute allowed={["admin", "gerente", "configurador"]}>
                     <PersonsPage />
                   </RoleRoute>
                 }
               />
               <Route path="logs" element={<LogsPage />} />
               <Route
+                path="reports"
+                element={
+                  <RoleRoute allowed={["admin", "gerente"]}>
+                    <ReportsPage />
+                  </RoleRoute>
+                }
+              />
+              <Route
                 path="settings"
                 element={
-                  <RoleRoute allowed={["admin"]}>
+                  <RoleRoute allowed={["admin", "gerente"]}>
                     <SettingsPage />
                   </RoleRoute>
                 }
@@ -79,7 +88,7 @@ export default function App() {
               <Route
                 path="users"
                 element={
-                  <RoleRoute allowed={["admin"]}>
+                  <RoleRoute allowed={["admin", "gerente"]}>
                     <UsersPage />
                   </RoleRoute>
                 }

@@ -11,16 +11,19 @@ import {
   ShieldCheckIcon,
   UserGroupIcon,
   Cog6ToothIcon,
+  DocumentChartBarIcon,
 } from "@heroicons/react/24/outline";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Administrador",
+  gerente: "Gerente",
   configurador: "Configurador",
   visualizador: "Visualizador",
 };
 
 const ROLE_COLORS: Record<string, string> = {
   admin: "bg-red-500",
+  gerente: "bg-purple-500",
   configurador: "bg-yellow-500",
   visualizador: "bg-blue-400",
 };
@@ -46,9 +49,10 @@ export default function Layout() {
       ? [{ to: "/persons", label: "Pessoas", Icon: UsersIcon }]
       : []),
     { to: "/logs", label: "Logs", Icon: ClipboardDocumentListIcon },
-    // Admin only
-    ...(role === "admin"
+    // Admin + gerente
+    ...(role === "admin" || role === "gerente"
       ? [
+          { to: "/reports", label: "Relatórios", Icon: DocumentChartBarIcon },
           { to: "/settings", label: "Configurações", Icon: Cog6ToothIcon },
           { to: "/users", label: "Usuários", Icon: UserGroupIcon },
         ]

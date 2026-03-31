@@ -96,6 +96,12 @@ export const logsApi = {
   clear: () => api.delete("/api/logs/clear"),
 };
 
+// ─── Reports ─────────────────────────────────────────────────────────────────
+export const reportsApi = {
+  daily: (params: { report_date: string; camera_id?: number }) =>
+    api.get("/api/reports/daily", { params }),
+};
+
 export const getPhotoUrl = (path: string) => `${API_BASE}/${path}`;
 export const WS_BASE = process.env.REACT_APP_WS_URL || "ws://localhost:8000";
 
