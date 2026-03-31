@@ -105,6 +105,18 @@ export const logsApi = {
   clear: () => api.delete("/api/logs/clear"),
 };
 
+// ─── Telegram ────────────────────────────────────────────────────────────────
+export const telegramApi = {
+  getConfig: () => api.get("/api/telegram/config"),
+  updateConfig: (data: { bot_token?: string; notify_unrecognized?: boolean; notify_recognized?: boolean }) =>
+    api.put("/api/telegram/config", data),
+  test: () => api.post("/api/telegram/test"),
+  getMe: () => api.get("/api/telegram/me"),
+  link: (chat_id: string) => api.post("/api/telegram/link", { chat_id }),
+  unlink: () => api.post("/api/telegram/unlink"),
+  toggle: () => api.patch("/api/telegram/toggle"),
+};
+
 // ─── Reports ─────────────────────────────────────────────────────────────────
 export const reportsApi = {
   daily: (params: { report_date: string; camera_id?: number }) =>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { categoriesApi, fieldsApi, authApi, getPhotoUrl } from "../services/api";
+import { categoriesApi, fieldsApi, authApi, telegramApi } from "../services/api";
 import { PersonCategory, PersonField } from "../types";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -12,8 +12,11 @@ import {
   CheckIcon,
   SwatchIcon,
   PaintBrushIcon,
-  PhotoIcon,
   ShieldCheckIcon,
+  PaperAirplaneIcon,
+  LinkIcon,
+  BellAlertIcon,
+  BellSlashIcon,
 } from "@heroicons/react/24/outline";
 
 const COLORS = [
@@ -26,7 +29,7 @@ const COLORS = [
   { value: "indigo", label: "Índigo", bg: "bg-indigo-500" },
 ];
 
-type Tab = "branding" | "categories" | "fields";
+type Tab = "branding" | "categories" | "fields" | "telegram";
 
 export default function SettingsPage() {
   const { branding, refreshBranding } = useAuth();
@@ -78,6 +81,74 @@ export default function SettingsPage() {
       setLogoUploading(false);
       if (logoRef.current) logoRef.current.value = "";
     }
+  };
+
+  // ─── Telegram ──────────────────────────────────────────────────────────────
+  const [tgConfig, setTgConfig] = useState<{
+    bot_token_set: boolean; bot_username: string | null;
+    notify_unrecognized: boolean; notify_recognized: boolean;
+  } | null>(null);
+  const [tgMe, setTgMe] = useState<{ telegram_chat_id: string | null; telegram_active: boolean } | null>(null);
+  const [tgToken, setTgToken] = useState("");
+  const [tgChatId, setTgChatId] = useState("");
+  const [tgSaving, setTgSaving] = useState(false);
+  const [tgMsg, setTgMsg] = useState("");
+
+  const loadTelegram = () => {
+    telegramApi.getConfig().then((r) => setTgConfig(r.data)).catch(() => {});
+    telegramApi.getMe().then((r) => setTgMe(r.data)).catch(() => {});
+  };
+
+  useEffect(() => { loadTelegram(); }, []);
+
+  const handleTgSaveToken = async () => {
+    setTgSaving(true); setTgMsg("");
+    try {
+      const res = await telegramApi.updateConfig({ bot_token: tgToken });
+      setTgConfig(res.data);
+      setTgToken("");
+      setTgMsg("Bot configurado!");
+    } catch (err: any) {
+      setTgMsg(err.response?.data?.detail || "Erro");
+    } finally { setTgSaving(false); }
+  };
+
+  const handleTgLink = async () => {
+    setTgSaving(true); setTgMsg("");
+    try {
+      const res = await telegramApi.link(tgChatId);
+      setTgMe(res.data);
+      setTgChatId("");
+      setTgMsg("Telegram vinculado!");
+    } catch (err: any) {
+      setTgMsg(err.response?.data?.detail || "Erro ao vincular");
+    } finally { setTgSaving(false); }
+  };
+
+  const handleTgUnlink = async () => {
+    const res = await telegramApi.unlink();
+    setTgMe(res.data);
+    setTgMsg("Telegram desvinculado");
+  };
+
+  const handleTgToggle = async () => {
+    const res = await telegramApi.toggle();
+    setTgMe(res.data);
+  };
+
+  const handleTgTest = async () => {
+    setTgMsg("");
+    try {
+      await telegramApi.test();
+      setTgMsg("Mensagem de teste enviada!");
+    } catch (err: any) {
+      setTgMsg(err.response?.data?.detail || "Erro ao enviar teste");
+    }
+  };
+
+  const handleTgNotifyToggle = async (field: "notify_unrecognized" | "notify_recognized", value: boolean) => {
+    const res = await telegramApi.updateConfig({ [field]: value });
+    setTgConfig(res.data);
   };
 
   // ─── Categories ────────────────────────────────────────────────────────────
@@ -241,6 +312,15 @@ export default function SettingsPage() {
         >
           <Squares2X2Icon className="w-4 h-4" />
           Campos
+        </button>
+        <button
+          onClick={() => setTab("telegram")}
+          className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+            tab === "telegram" ? "bg-white text-navy-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          <PaperAirplaneIcon className="w-4 h-4" />
+          Telegram
         </button>
       </div>
 
@@ -489,6 +569,173 @@ export default function SettingsPage() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════════ */}
+      {/* TELEGRAM TAB                                                          */}
+      {/* ═══════════════════════════════════════════════════════════════════════ */}
+      {tab === "telegram" && (
+        <div className="space-y-4">
+          <p className="text-sm text-slate-500">
+            Configure notificações via Telegram para receber alertas de reconhecimento em tempo real
+          </p>
+
+          {tgMsg && (
+            <div className={`p-3 rounded-lg text-sm ${
+              tgMsg.includes("Erro") || tgMsg.includes("inválido") || tgMsg.includes("Falha")
+                ? "bg-red-50 border border-red-200 text-red-700"
+                : "bg-green-50 border border-green-200 text-green-700"
+            }`}>
+              {tgMsg}
+            </div>
+          )}
+
+          {/* Bot Config (admin/gerente) */}
+          <div className="card space-y-4">
+            <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <PaperAirplaneIcon className="w-4 h-4" />
+              Configuração do Bot
+            </h3>
+
+            {tgConfig?.bot_token_set ? (
+              <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-xl">
+                <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-green-800">Bot conectado</p>
+                  <p className="text-xs text-green-600">@{tgConfig.bot_username}</p>
+                </div>
+                <button
+                  onClick={() => { setTgToken(""); handleTgSaveToken(); }}
+                  className="text-xs text-red-500 hover:text-red-700"
+                >
+                  Remover
+                </button>
+              </div>
+            ) : (
+              <div>
+                <p className="text-xs text-slate-500 mb-2">
+                  1. Abra o Telegram e fale com <strong>@BotFather</strong><br />
+                  2. Envie <code>/newbot</code> e siga as instruções<br />
+                  3. Cole o token abaixo
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    className="input-field flex-1 text-sm font-mono"
+                    value={tgToken}
+                    onChange={(e) => setTgToken(e.target.value)}
+                    placeholder="Cole o token do bot aqui"
+                  />
+                  <button
+                    onClick={handleTgSaveToken}
+                    disabled={tgSaving || !tgToken.trim()}
+                    className="btn-primary text-sm"
+                  >
+                    {tgSaving ? "..." : "Salvar"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Notification preferences */}
+          {tgConfig?.bot_token_set && (
+            <div className="card space-y-3">
+              <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                <BellAlertIcon className="w-4 h-4" />
+                Tipos de Notificação
+              </h3>
+              <label className="flex items-center justify-between py-2 cursor-pointer">
+                <div>
+                  <p className="text-sm font-medium text-slate-700">Pessoas não identificadas</p>
+                  <p className="text-xs text-slate-400">Alertar quando uma pessoa desconhecida for detectada</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={tgConfig.notify_unrecognized}
+                  onChange={(e) => handleTgNotifyToggle("notify_unrecognized", e.target.checked)}
+                  className="w-5 h-5 text-navy-600 rounded"
+                />
+              </label>
+              <label className="flex items-center justify-between py-2 cursor-pointer border-t border-slate-100 pt-3">
+                <div>
+                  <p className="text-sm font-medium text-slate-700">Pessoas identificadas</p>
+                  <p className="text-xs text-slate-400">Notificar quando uma pessoa conhecida for reconhecida</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={tgConfig.notify_recognized}
+                  onChange={(e) => handleTgNotifyToggle("notify_recognized", e.target.checked)}
+                  className="w-5 h-5 text-navy-600 rounded"
+                />
+              </label>
+            </div>
+          )}
+
+          {/* User's own Telegram link */}
+          {tgConfig?.bot_token_set && (
+            <div className="card space-y-4">
+              <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                <LinkIcon className="w-4 h-4" />
+                Seu Telegram
+              </h3>
+
+              {tgMe?.telegram_chat_id ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                    <div className="flex items-center gap-2">
+                      {tgMe.telegram_active ? (
+                        <BellAlertIcon className="w-5 h-5 text-blue-600" />
+                      ) : (
+                        <BellSlashIcon className="w-5 h-5 text-slate-400" />
+                      )}
+                      <div>
+                        <p className="text-sm font-medium text-blue-800">
+                          {tgMe.telegram_active ? "Notificações ativas" : "Notificações pausadas"}
+                        </p>
+                        <p className="text-xs text-blue-600">Chat ID: {tgMe.telegram_chat_id}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={handleTgToggle} className="btn-secondary text-xs py-1 px-2">
+                        {tgMe.telegram_active ? "Pausar" : "Ativar"}
+                      </button>
+                      <button onClick={handleTgUnlink} className="text-xs text-red-500 hover:text-red-700 px-2">
+                        Desvincular
+                      </button>
+                    </div>
+                  </div>
+                  <button onClick={handleTgTest} className="btn-secondary text-sm w-full">
+                    Enviar mensagem de teste
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-xs text-slate-500 mb-2">
+                    1. Abra o Telegram e procure por <strong>@{tgConfig.bot_username}</strong><br />
+                    2. Envie <code>/start</code> para o bot<br />
+                    3. O bot vai responder com seu <strong>Chat ID</strong><br />
+                    4. Cole o Chat ID abaixo
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      className="input-field flex-1 text-sm font-mono"
+                      value={tgChatId}
+                      onChange={(e) => setTgChatId(e.target.value)}
+                      placeholder="Seu Chat ID (ex: 123456789)"
+                    />
+                    <button
+                      onClick={handleTgLink}
+                      disabled={tgSaving || !tgChatId.trim()}
+                      className="btn-primary text-sm"
+                    >
+                      {tgSaving ? "..." : "Vincular"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
