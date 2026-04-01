@@ -5,6 +5,8 @@ export interface User {
   role: "admin" | "gerente" | "configurador" | "visualizador";
   is_active: boolean;
   org_name: string | null;
+  telegram_chat_id: string | null;
+  telegram_active: boolean;
   created_at: string;
 }
 
