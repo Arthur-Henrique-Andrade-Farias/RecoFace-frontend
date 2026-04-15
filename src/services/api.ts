@@ -11,15 +11,12 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Redirect to login on 401 (skip for /auth/me and /auth/login to avoid loops)
+// On 401, just clear the token. React Router handles the redirect.
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    const url = err.config?.url || "";
-    const isAuthEndpoint = url.includes("/auth/me") || url.includes("/auth/login");
-    if (err.response?.status === 401 && !isAuthEndpoint) {
+    if (err.response?.status === 401) {
       localStorage.removeItem("recoface_token");
-      window.location.href = "/login";
     }
     return Promise.reject(err);
   }
