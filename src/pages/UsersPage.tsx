@@ -58,6 +58,8 @@ export default function UsersPage() {
   const [formRole, setFormRole] = useState("visualizador");
   const [formTelegramId, setFormTelegramId] = useState("");
   const [formTelegramActive, setFormTelegramActive] = useState(false);
+  const [formWhatsappPhone, setFormWhatsappPhone] = useState("");
+  const [formWhatsappActive, setFormWhatsappActive] = useState(false);
 
   const load = () =>
     authApi.listUsers().then((r) => setUsers(r.data)).finally(() => setPageLoading(false));
@@ -69,6 +71,7 @@ export default function UsersPage() {
     setFormName(""); setFormEmail(""); setFormPassword("");
     setFormRole("visualizador");
     setFormTelegramId(""); setFormTelegramActive(false);
+    setFormWhatsappPhone(""); setFormWhatsappActive(false);
     setShowPassword(false); setError("");
     setShowForm(true);
   };
@@ -81,6 +84,8 @@ export default function UsersPage() {
     setFormRole(u.role);
     setFormTelegramId(u.telegram_chat_id ?? "");
     setFormTelegramActive(u.telegram_active);
+    setFormWhatsappPhone(u.whatsapp_phone ?? "");
+    setFormWhatsappActive(u.whatsapp_active);
     setShowPassword(false); setError("");
     setShowForm(true);
   };
@@ -95,6 +100,8 @@ export default function UsersPage() {
           role: formRole,
           telegram_chat_id: formTelegramId.trim() || undefined,
           telegram_active: formTelegramId.trim() ? formTelegramActive : false,
+          whatsapp_phone: formWhatsappPhone.trim() || undefined,
+          whatsapp_active: formWhatsappPhone.trim() ? formWhatsappActive : false,
         });
       } else {
         await authApi.createUser({
@@ -104,6 +111,8 @@ export default function UsersPage() {
           role: formRole,
           telegram_chat_id: formTelegramId.trim() || undefined,
           telegram_active: formTelegramId.trim() ? formTelegramActive : false,
+          whatsapp_phone: formWhatsappPhone.trim() || undefined,
+          whatsapp_active: formWhatsappPhone.trim() ? formWhatsappActive : false,
         });
       }
       setShowForm(false);
@@ -201,6 +210,12 @@ export default function UsersPage() {
                     {u.telegram_active && (
                       <span className="flex items-center gap-0.5 text-[10px] text-blue-600">
                         <PaperAirplaneIcon className="w-3 h-3" /> Telegram
+                      </span>
+                    )}
+                    {u.whatsapp_active && (
+                      <span className="flex items-center gap-0.5 text-[10px] text-green-600">
+                        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>
+                        WhatsApp
                       </span>
                     )}
                   </div>
@@ -376,6 +391,55 @@ export default function UsersPage() {
                     <div className="flex items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded-lg">
                       <BellSlashIcon className="w-4 h-4 text-slate-400" />
                       <p className="text-xs text-slate-500">Telegram vinculado mas notificações pausadas</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* WhatsApp section */}
+              <div className="border-t border-slate-100 pt-4">
+                <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2 mb-3">
+                  <svg className="w-4 h-4 text-green-600" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>
+                  Notificações WhatsApp
+                </h3>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Telefone WhatsApp</label>
+                    <input
+                      className="input-field text-sm font-mono"
+                      value={formWhatsappPhone}
+                      onChange={(e) => setFormWhatsappPhone(e.target.value)}
+                      placeholder="5521999999999"
+                    />
+                    <p className="text-xs text-slate-400 mt-1">
+                      Número com código do país + DDD (ex: 5521999999999)
+                    </p>
+                  </div>
+
+                  <label className="flex items-center justify-between cursor-pointer">
+                    <div>
+                      <p className="text-sm font-medium text-slate-700">Receber alertas</p>
+                      <p className="text-xs text-slate-400">Notificações de detecção pelo WhatsApp</p>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        checked={formWhatsappActive}
+                        onChange={(e) => setFormWhatsappActive(e.target.checked)}
+                        disabled={!formWhatsappPhone}
+                        className="sr-only peer"
+                      />
+                      <div className={`w-11 h-6 rounded-full transition-colors ${formWhatsappActive && formWhatsappPhone ? "bg-green-500" : "bg-slate-200"}`}>
+                        <div className={`w-5 h-5 bg-white rounded-full shadow-sm transform transition-transform mt-0.5 ${formWhatsappActive && formWhatsappPhone ? "translate-x-[22px]" : "translate-x-0.5"}`} />
+                      </div>
+                    </div>
+                  </label>
+
+                  {formWhatsappActive && formWhatsappPhone && (
+                    <div className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+                      <BellAlertIcon className="w-4 h-4 text-green-600" />
+                      <p className="text-xs text-green-700">Este usuário receberá alertas pelo WhatsApp</p>
                     </div>
                   )}
                 </div>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { categoriesApi, fieldsApi, authApi, telegramApi } from "../services/api";
+import { categoriesApi, fieldsApi, authApi, telegramApi, getPhotoUrl } from "../services/api";
 import { PersonCategory, PersonField } from "../types";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -29,7 +29,7 @@ const COLORS = [
   { value: "indigo", label: "Índigo", bg: "bg-indigo-500" },
 ];
 
-type Tab = "branding" | "categories" | "fields" | "telegram";
+type Tab = "branding" | "categories" | "fields" | "telegram" | "whatsapp";
 
 export default function SettingsPage() {
   const { branding, refreshBranding } = useAuth();
@@ -149,6 +149,58 @@ export default function SettingsPage() {
   const handleTgNotifyToggle = async (field: "notify_unrecognized" | "notify_recognized", value: boolean) => {
     const res = await telegramApi.updateConfig({ [field]: value });
     setTgConfig(res.data);
+  };
+
+  // ─── WhatsApp ──────────────────────────────────────────────────────────────
+  const [waConfig, setWaConfig] = useState<{
+    webhook_url: string; phone_field: string;
+    notify_recognized: boolean; notify_unrecognized: boolean;
+  } | null>(null);
+  const [waWebhook, setWaWebhook] = useState("");
+  const [waPhoneField, setWaPhoneField] = useState("phone");
+  const [waSaving, setWaSaving] = useState(false);
+  const [waMsg, setWaMsg] = useState("");
+  const [waTestPhone, setWaTestPhone] = useState("");
+
+  const loadWhatsApp = () => {
+    authApi.getWhatsAppConfig().then((r) => {
+      setWaConfig(r.data);
+      setWaWebhook(r.data.webhook_url);
+      setWaPhoneField(r.data.phone_field);
+    }).catch(() => {});
+  };
+
+  useEffect(() => { loadWhatsApp(); }, []);
+
+  const handleWaSave = async () => {
+    setWaSaving(true); setWaMsg("");
+    try {
+      const res = await authApi.updateWhatsAppConfig({
+        webhook_url: waWebhook,
+        phone_field: waPhoneField,
+      });
+      setWaConfig(res.data);
+      setWaMsg("Configuração salva!");
+      setTimeout(() => setWaMsg(""), 3000);
+    } catch { setWaMsg("Erro ao salvar"); }
+    finally { setWaSaving(false); }
+  };
+
+  const handleWaNotifyToggle = async (field: "notify_recognized" | "notify_unrecognized", value: boolean) => {
+    const res = await authApi.updateWhatsAppConfig({ [field]: value });
+    setWaConfig(res.data);
+  };
+
+  const handleWaTest = async () => {
+    if (!waTestPhone.trim()) return;
+    setWaMsg("");
+    try {
+      await authApi.testWhatsApp(waTestPhone.trim());
+      setWaMsg("Mensagem de teste enviada!");
+      setTimeout(() => setWaMsg(""), 3000);
+    } catch (err: any) {
+      setWaMsg(err.response?.data?.detail || "Erro ao enviar teste");
+    }
   };
 
   // ─── Categories ────────────────────────────────────────────────────────────
@@ -321,6 +373,15 @@ export default function SettingsPage() {
         >
           <PaperAirplaneIcon className="w-4 h-4" />
           Telegram
+        </button>
+        <button
+          onClick={() => setTab("whatsapp")}
+          className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+            tab === "whatsapp" ? "bg-white text-navy-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.12.553 4.113 1.518 5.842L.057 23.64l5.97-1.566A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.82c-1.884 0-3.63-.508-5.14-1.392l-.37-.218-3.822 1.003 1.02-3.73-.24-.38A9.787 9.787 0 012.18 12c0-5.422 4.398-9.82 9.82-9.82 5.422 0 9.82 4.398 9.82 9.82 0 5.422-4.398 9.82-9.82 9.82z"/></svg>
+          WhatsApp
         </button>
       </div>
 
@@ -736,6 +797,135 @@ export default function SettingsPage() {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════════ */}
+      {/* WHATSAPP TAB                                                          */}
+      {/* ═══════════════════════════════════════════════════════════════════════ */}
+      {tab === "whatsapp" && (
+        <div className="space-y-4">
+          <p className="text-sm text-slate-500">
+            Configure o envio automático de notificações via WhatsApp quando pessoas forem detectadas
+          </p>
+
+          {waMsg && (
+            <div className={`p-3 rounded-lg text-sm ${
+              waMsg.includes("Erro") || waMsg.includes("Falha")
+                ? "bg-red-50 border border-red-200 text-red-700"
+                : "bg-green-50 border border-green-200 text-green-700"
+            }`}>
+              {waMsg}
+            </div>
+          )}
+
+          {/* Webhook URL */}
+          <div className="card space-y-4">
+            <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <svg className="w-4 h-4 text-green-600" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>
+              Configuração do Webhook
+            </h3>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">URL do Webhook (n8n)</label>
+              <input
+                className="input-field text-sm font-mono"
+                value={waWebhook}
+                onChange={(e) => setWaWebhook(e.target.value)}
+                placeholder="https://n8n.exemplo.com/webhook/..."
+              />
+              <p className="text-xs text-slate-400 mt-1">
+                URL do webhook que receberá o POST com os dados da detecção
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Campo de telefone</label>
+              <input
+                className="input-field text-sm font-mono w-48"
+                value={waPhoneField}
+                onChange={(e) => setWaPhoneField(e.target.value)}
+                placeholder="phone"
+              />
+              <p className="text-xs text-slate-400 mt-1">
+                Nome do campo personalizado da pessoa que contém o telefone (ex: phone, telefone)
+              </p>
+            </div>
+
+            <button onClick={handleWaSave} disabled={waSaving} className="btn-primary text-sm">
+              {waSaving ? "Salvando..." : "Salvar configuração"}
+            </button>
+          </div>
+
+          {/* Notification types */}
+          {waConfig?.webhook_url && (
+            <div className="card space-y-3">
+              <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                <BellAlertIcon className="w-4 h-4" />
+                Tipos de Notificação
+              </h3>
+              <label className="flex items-center justify-between py-2 cursor-pointer">
+                <div>
+                  <p className="text-sm font-medium text-slate-700">Pessoas reconhecidas</p>
+                  <p className="text-xs text-slate-400">Enviar WhatsApp para o responsável quando a pessoa for detectada</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={waConfig.notify_recognized}
+                  onChange={(e) => handleWaNotifyToggle("notify_recognized", e.target.checked)}
+                  className="w-5 h-5 text-green-600 rounded"
+                />
+              </label>
+              <label className="flex items-center justify-between py-2 cursor-pointer border-t border-slate-100 pt-3">
+                <div>
+                  <p className="text-sm font-medium text-slate-700">Pessoas não reconhecidas</p>
+                  <p className="text-xs text-slate-400">Requer um número padrão configurado no webhook</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={waConfig.notify_unrecognized}
+                  onChange={(e) => handleWaNotifyToggle("notify_unrecognized", e.target.checked)}
+                  className="w-5 h-5 text-green-600 rounded"
+                />
+              </label>
+            </div>
+          )}
+
+          {/* Test */}
+          {waConfig?.webhook_url && (
+            <div className="card space-y-3">
+              <h3 className="text-sm font-bold text-slate-800">Testar envio</h3>
+              <div className="flex gap-2">
+                <input
+                  className="input-field text-sm font-mono flex-1"
+                  value={waTestPhone}
+                  onChange={(e) => setWaTestPhone(e.target.value)}
+                  placeholder="5521999999999"
+                />
+                <button
+                  onClick={handleWaTest}
+                  disabled={!waTestPhone.trim()}
+                  className="btn-primary text-sm"
+                >
+                  Enviar teste
+                </button>
+              </div>
+              <p className="text-xs text-slate-400">
+                Envia uma mensagem de teste para o número informado via webhook
+              </p>
+            </div>
+          )}
+
+          {/* How it works */}
+          <div className="card bg-green-50 border border-green-200">
+            <h4 className="text-sm font-semibold text-green-800 mb-2">Como funciona</h4>
+            <ul className="text-xs text-green-700 space-y-1">
+              <li>1. Quando uma pessoa reconhecida é detectada, o sistema busca o telefone no campo configurado</li>
+              <li>2. Envia um POST para o webhook com: telefone, nome, data/hora, local e câmera</li>
+              <li>3. O n8n/automação recebe e dispara a mensagem via WhatsApp</li>
+              <li>4. O campo de telefone deve estar preenchido no cadastro da pessoa (Configurações → Campos)</li>
+            </ul>
+          </div>
         </div>
       )}
 

@@ -35,10 +35,16 @@ export const authApi = {
     api.post("/api/auth/branding/logo", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     }),
+  // WhatsApp
+  getWhatsAppConfig: () => api.get("/api/auth/whatsapp-config"),
+  updateWhatsAppConfig: (data: { webhook_url?: string; phone_field?: string; notify_recognized?: boolean; notify_unrecognized?: boolean }) =>
+    api.put("/api/auth/whatsapp-config", data),
+  testWhatsApp: (phone: string) =>
+    api.post("/api/auth/whatsapp-test", { phone }),
   listUsers: () => api.get("/api/auth/users"),
-  createUser: (data: { name: string; email: string; password: string; role: string; telegram_chat_id?: string; telegram_active?: boolean }) =>
+  createUser: (data: { name: string; email: string; password: string; role: string; telegram_chat_id?: string; telegram_active?: boolean; whatsapp_phone?: string; whatsapp_active?: boolean }) =>
     api.post("/api/auth/users", data),
-  updateUser: (id: number, data: { name?: string; role?: string; telegram_chat_id?: string; telegram_active?: boolean }) =>
+  updateUser: (id: number, data: { name?: string; role?: string; telegram_chat_id?: string; telegram_active?: boolean; whatsapp_phone?: string; whatsapp_active?: boolean }) =>
     api.put(`/api/auth/users/${id}`, data),
   toggleUser: (id: number) => api.patch(`/api/auth/users/${id}/toggle`),
   deleteUser: (id: number) => api.delete(`/api/auth/users/${id}`),

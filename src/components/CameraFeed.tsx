@@ -5,6 +5,7 @@ import {
   VideoCameraIcon,
   ExclamationTriangleIcon,
   CheckCircleIcon,
+  WifiIcon,
 } from "@heroicons/react/24/outline";
 
 interface Props {
@@ -16,20 +17,23 @@ export default function CameraFeed({ camera }: Props) {
   const state = useCameraState(camera.id);
   const videoRef = useRef<HTMLVideoElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
+  const rtspImgRef = useRef<HTMLImageElement>(null);
 
-  // Attach stream to visible video element
+  const isRtsp = camera.camera_type === "ip_camera" && !!camera.url;
+
+  // Attach webcam stream to video element
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !state.stream) return;
-
+    if (!video || !state.stream || isRtsp) return;
     if (video.srcObject !== state.stream) {
       video.srcObject = state.stream;
       video.play().catch(() => {});
     }
-  }, [state.stream, state.status]);
+  }, [state.stream, state.status, isRtsp]);
 
-  // Draw bounding boxes on overlay canvas
+  // Draw bounding boxes on overlay canvas (webcam only - RTSP has boxes drawn server-side)
   const drawBoxes = useCallback(() => {
+    if (isRtsp) return; // RTSP frames already have boxes
     const canvas = overlayRef.current;
     const video = videoRef.current;
     if (!canvas || !video || !video.videoWidth) return;
@@ -47,7 +51,6 @@ export default function CameraFeed({ camera }: Props) {
       const w = right - left;
       const h = bottom - top;
 
-      // Box
       ctx.strokeStyle = color;
       ctx.lineWidth = 3;
       ctx.shadowColor = color;
@@ -55,7 +58,6 @@ export default function CameraFeed({ camera }: Props) {
       ctx.strokeRect(left, top, w, h);
       ctx.shadowBlur = 0;
 
-      // Corner accents
       const cs = 14;
       ctx.fillStyle = color;
       [[left, top], [right - cs, top], [left, bottom - cs], [right - cs, bottom - cs]].forEach(
@@ -65,7 +67,6 @@ export default function CameraFeed({ camera }: Props) {
         }
       );
 
-      // Label
       const label = face.recognized
         ? `${face.person_name} (${face.confidence.toFixed(0)}%)`
         : "Desconhecido";
@@ -77,14 +78,12 @@ export default function CameraFeed({ camera }: Props) {
       ctx.fillStyle = "#fff";
       ctx.fillText(label, left + 5, labelY - 2);
     });
-  }, [state.faces]);
+  }, [state.faces, isRtsp]);
 
-  // Redraw overlay when faces change
   useEffect(() => {
-    if (state.status === "active") drawBoxes();
-  }, [state.faces, state.status, drawBoxes]);
+    if (state.status === "active" && !isRtsp) drawBoxes();
+  }, [state.faces, state.status, drawBoxes, isRtsp]);
 
-  // Clear overlay when stopped
   useEffect(() => {
     if (state.status !== "active") {
       const canvas = overlayRef.current;
@@ -103,10 +102,19 @@ export default function CameraFeed({ camera }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-navy-600 text-white">
         <div className="flex items-center gap-2">
-          <VideoCameraIcon className="w-4 h-4 text-blue-300" />
+          {isRtsp ? (
+            <WifiIcon className="w-4 h-4 text-orange-300" />
+          ) : (
+            <VideoCameraIcon className="w-4 h-4 text-blue-300" />
+          )}
           <span className="font-semibold text-sm truncate">{camera.name}</span>
           {camera.location && (
             <span className="text-xs text-navy-200">— {camera.location}</span>
+          )}
+          {isRtsp && (
+            <span className="text-[10px] bg-orange-500/30 text-orange-200 px-1.5 py-0.5 rounded font-medium">
+              RTSP
+            </span>
           )}
         </div>
         <div className="flex items-center gap-2">
@@ -139,14 +147,19 @@ export default function CameraFeed({ camera }: Props) {
       <div className="relative bg-slate-900" style={{ aspectRatio: "16/9" }}>
         {state.status === "idle" && (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400">
-            <VideoCameraIcon className="w-16 h-16 mb-3 opacity-30" />
+            {isRtsp ? (
+              <WifiIcon className="w-16 h-16 mb-3 opacity-30" />
+            ) : (
+              <VideoCameraIcon className="w-16 h-16 mb-3 opacity-30" />
+            )}
             <p className="text-sm font-medium">Clique em "Iniciar" para ativar</p>
+            {isRtsp && <p className="text-xs text-slate-500 mt-1">Câmera RTSP/DVR</p>}
           </div>
         )}
         {state.status === "connecting" && (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-300">
             <div className="w-10 h-10 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mb-3" />
-            <p className="text-sm">Conectando câmera...</p>
+            <p className="text-sm">{isRtsp ? "Conectando ao DVR..." : "Conectando câmera..."}</p>
           </div>
         )}
         {state.status === "error" && (
@@ -162,20 +175,32 @@ export default function CameraFeed({ camera }: Props) {
           </div>
         )}
 
-        {/* Video element - displays the stream from context */}
-        <video
-          ref={videoRef}
-          muted
-          playsInline
-          className={`w-full h-full object-cover ${state.status !== "active" ? "hidden" : ""}`}
-        />
+        {/* Webcam: video element */}
+        {!isRtsp && (
+          <>
+            <video
+              ref={videoRef}
+              muted
+              playsInline
+              className={`w-full h-full object-cover ${state.status !== "active" ? "hidden" : ""}`}
+            />
+            <canvas
+              ref={overlayRef}
+              className="absolute inset-0 w-full h-full pointer-events-none"
+              style={{ display: state.status === "active" ? "block" : "none" }}
+            />
+          </>
+        )}
 
-        {/* Overlay canvas for bounding boxes */}
-        <canvas
-          ref={overlayRef}
-          className="absolute inset-0 w-full h-full pointer-events-none"
-          style={{ display: state.status === "active" ? "block" : "none" }}
-        />
+        {/* RTSP: server-rendered JPEG frames */}
+        {isRtsp && state.status === "active" && state.rtspFrame && (
+          <img
+            ref={rtspImgRef}
+            src={state.rtspFrame}
+            alt="RTSP Feed"
+            className="w-full h-full object-contain"
+          />
+        )}
 
         {/* Face counter badges */}
         {state.status === "active" && state.faces.length > 0 && (

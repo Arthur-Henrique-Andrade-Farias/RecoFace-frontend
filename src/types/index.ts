@@ -7,6 +7,8 @@ export interface User {
   org_name: string | null;
   telegram_chat_id: string | null;
   telegram_active: boolean;
+  whatsapp_phone: string | null;
+  whatsapp_active: boolean;
   created_at: string;
 }
 
