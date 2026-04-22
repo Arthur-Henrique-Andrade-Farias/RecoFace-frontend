@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { logsApi, camerasApi, personsApi, getPhotoUrl, categoriesApi } from "../services/api";
 import { RecognitionLog, Camera, Person, PersonCategory } from "../types";
 import { format } from "date-fns";
@@ -21,6 +22,8 @@ import { useAuth } from "../context/AuthContext";
 export default function LogsPage() {
   const { user } = useAuth();
   const canEdit = user?.role === "admin" || user?.role === "gerente" || user?.role === "configurador";
+  const [searchParams, setSearchParams] = useSearchParams();
+  const targetLogId = searchParams.get("log");
 
   const [logs, setLogs] = useState<RecognitionLog[]>([]);
   const [cameras, setCameras] = useState<Camera[]>([]);
@@ -75,6 +78,30 @@ export default function LogsPage() {
     const interval = setInterval(load, 4000);
     return () => clearInterval(interval);
   }, [autoRefresh, load]);
+
+  // Auto-open log modal when URL has ?log=<id> (from WhatsApp notification)
+  useEffect(() => {
+    if (!targetLogId || editLog || logs.length === 0) return;
+    const logIdNum = parseInt(targetLogId, 10);
+    const target = logs.find((l) => l.id === logIdNum);
+    if (target) {
+      openEditLog(target);
+      // Clear the param so it doesn't reopen on refresh
+      searchParams.delete("log");
+      setSearchParams(searchParams, { replace: true });
+    } else {
+      // If not in current list, fetch it directly
+      logsApi.list({ limit: 500 }).then((r) => {
+        const found = (r.data as RecognitionLog[]).find((l) => l.id === logIdNum);
+        if (found) {
+          openEditLog(found);
+          searchParams.delete("log");
+          setSearchParams(searchParams, { replace: true });
+        }
+      }).catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targetLogId, logs]);
 
   const handleClear = async () => {
     if (!window.confirm("Limpar todos os logs? Esta ação não pode ser desfeita.")) return;

@@ -36,7 +36,7 @@ export const authApi = {
     }),
   // WhatsApp
   getWhatsAppConfig: () => api.get("/api/auth/whatsapp-config"),
-  updateWhatsAppConfig: (data: { webhook_url?: string; phone_field?: string; notify_recognized?: boolean; notify_unrecognized?: boolean }) =>
+  updateWhatsAppConfig: (data: { webhook_url?: string; phone_field?: string; notify_recognized?: boolean; notify_unrecognized?: boolean; frontend_url?: string }) =>
     api.put("/api/auth/whatsapp-config", data),
   testWhatsApp: (phone: string) =>
     api.post("/api/auth/whatsapp-test", { phone }),

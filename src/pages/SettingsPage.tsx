@@ -155,9 +155,11 @@ export default function SettingsPage() {
   const [waConfig, setWaConfig] = useState<{
     webhook_url: string; phone_field: string;
     notify_recognized: boolean; notify_unrecognized: boolean;
+    frontend_url: string;
   } | null>(null);
   const [waWebhook, setWaWebhook] = useState("");
   const [waPhoneField, setWaPhoneField] = useState("phone");
+  const [waFrontendUrl, setWaFrontendUrl] = useState("");
   const [waSaving, setWaSaving] = useState(false);
   const [waMsg, setWaMsg] = useState("");
   const [waTestPhone, setWaTestPhone] = useState("");
@@ -167,6 +169,7 @@ export default function SettingsPage() {
       setWaConfig(r.data);
       setWaWebhook(r.data.webhook_url);
       setWaPhoneField(r.data.phone_field);
+      setWaFrontendUrl(r.data.frontend_url || "");
     }).catch(() => {});
   };
 
@@ -178,6 +181,7 @@ export default function SettingsPage() {
       const res = await authApi.updateWhatsAppConfig({
         webhook_url: waWebhook,
         phone_field: waPhoneField,
+        frontend_url: waFrontendUrl,
       });
       setWaConfig(res.data);
       setWaMsg("Configuração salva!");
@@ -849,6 +853,19 @@ export default function SettingsPage() {
               />
               <p className="text-xs text-slate-400 mt-1">
                 Nome do campo personalizado da pessoa que contém o telefone (ex: phone, telefone)
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">URL do site (frontend)</label>
+              <input
+                className="input-field text-sm font-mono"
+                value={waFrontendUrl}
+                onChange={(e) => setWaFrontendUrl(e.target.value)}
+                placeholder="https://recoface.netlify.app"
+              />
+              <p className="text-xs text-slate-400 mt-1">
+                URL do site que será enviada nas mensagens para levar o usuário direto ao alerta
               </p>
             </div>
 
