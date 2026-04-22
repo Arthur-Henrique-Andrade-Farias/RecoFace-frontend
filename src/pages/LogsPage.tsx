@@ -100,8 +100,7 @@ export default function LogsPage() {
         }
       }).catch(() => {});
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [targetLogId, logs]);
+  }, [targetLogId, logs, editLog, searchParams, setSearchParams]);
 
   const handleClear = async () => {
     if (!window.confirm("Limpar todos os logs? Esta ação não pode ser desfeita.")) return;
