@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { camerasApi } from "../services/api";
+import TutorialButton from "../components/TutorialButton";
 import { Camera } from "../types";
 import CameraFeed from "../components/CameraFeed";
 import { useAuth } from "../context/AuthContext";
@@ -123,12 +124,15 @@ export default function CamerasPage() {
             Gerencie e monitore as câmeras cadastradas
           </p>
         </div>
-        {isAdmin && (
-          <button onClick={openCreate} className="btn-primary flex items-center gap-2">
-            <PlusIcon className="w-4 h-4" />
-            Nova Câmera
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          <TutorialButton title="Câmeras" driveFileId="1YQcbxJVCygAEdz9FAooi2HRpi5HVWsmw" />
+          {isAdmin && (
+            <button onClick={openCreate} className="btn-primary flex items-center gap-2">
+              <PlusIcon className="w-4 h-4" />
+              Nova Câmera
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Camera grid */}

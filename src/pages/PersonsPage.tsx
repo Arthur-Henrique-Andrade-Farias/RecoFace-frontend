@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { personsApi, getPhotoUrl, categoriesApi, fieldsApi } from "../services/api";
+import TutorialButton from "../components/TutorialButton";
 import { Person, PersonPhoto, PersonCategory, PersonField } from "../types";
 import {
   PlusIcon,
@@ -219,10 +220,13 @@ export default function PersonsPage() {
             Base de dados de pessoas cadastradas
           </p>
         </div>
-        <button onClick={openCreate} className="btn-primary flex items-center gap-2">
-          <PlusIcon className="w-4 h-4" />
-          Cadastrar Pessoa
-        </button>
+        <div className="flex items-center gap-2">
+          <TutorialButton title="Pessoas" driveFileId="1c_B8oJ_E45hvxvAx-9C4fTTeBW--wX39" />
+          <button onClick={openCreate} className="btn-primary flex items-center gap-2">
+            <PlusIcon className="w-4 h-4" />
+            Cadastrar Pessoa
+          </button>
+        </div>
       </div>
 
       {/* Search */}

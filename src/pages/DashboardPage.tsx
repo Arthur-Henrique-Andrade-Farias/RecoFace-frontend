@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { logsApi, camerasApi } from "../services/api";
 import { Stats, RecognitionLog, Camera } from "../types";
+import TutorialButton from "../components/TutorialButton";
 import {
   UsersIcon,
   VideoCameraIcon,
@@ -78,11 +79,14 @@ export default function DashboardPage() {
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800">Painel de Controle</h1>
-        <p className="text-slate-500 text-sm mt-1">
-          Visão geral do sistema de reconhecimento facial
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">Painel de Controle</h1>
+          <p className="text-slate-500 text-sm mt-1">
+            Visão geral do sistema de reconhecimento facial
+          </p>
+        </div>
+        <TutorialButton title="Painel" driveFileId="1ubcbkj_rl7YQFPpAqGfKNzd7kRZPc25t" />
       </div>
 
       {/* Stats */}

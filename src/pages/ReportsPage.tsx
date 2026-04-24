@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { reportsApi, camerasApi, getPhotoUrl, categoriesApi } from "../services/api";
+import TutorialButton from "../components/TutorialButton";
 import { Camera, PersonCategory } from "../types";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -112,6 +113,7 @@ export default function ReportsPage() {
             Relatório diário de reconhecimento por câmera/setor
           </p>
         </div>
+        <TutorialButton title="Relatórios" driveFileId="1eZU-uQ5VgAzwttomBW3lMR57t4R7O5rG" />
       </div>
 
       {/* Filters - hidden in print */}

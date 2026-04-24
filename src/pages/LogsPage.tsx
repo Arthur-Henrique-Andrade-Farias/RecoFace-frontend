@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { logsApi, camerasApi, personsApi, getPhotoUrl, categoriesApi } from "../services/api";
+import TutorialButton from "../components/TutorialButton";
 import { RecognitionLog, Camera, Person, PersonCategory } from "../types";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -191,6 +192,7 @@ export default function LogsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <TutorialButton title="Logs" driveFileId="1mCQfEH404lKidODdtkcUCDoPSQGAFC1V" />
           <button
             onClick={() => setAutoRefresh(!autoRefresh)}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${

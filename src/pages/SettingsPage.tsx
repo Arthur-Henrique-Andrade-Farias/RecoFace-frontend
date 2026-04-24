@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { categoriesApi, fieldsApi, authApi, telegramApi, getPhotoUrl } from "../services/api";
+import TutorialButton from "../components/TutorialButton";
 import { PersonCategory, PersonField } from "../types";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -333,11 +334,14 @@ export default function SettingsPage() {
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800">Configurações</h1>
-        <p className="text-slate-500 text-sm mt-1">
-          Configure categorias de pessoas e campos do formulário de cadastro
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">Configurações</h1>
+          <p className="text-slate-500 text-sm mt-1">
+            Configure categorias de pessoas e campos do formulário de cadastro
+          </p>
+        </div>
+        <TutorialButton title="Configurações" driveFileId="1K1kn1Pss1CufKbcrU5UEJ2_70AgBcUkg" />
       </div>
 
       {/* Tabs */}
