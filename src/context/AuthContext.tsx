@@ -1,11 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { User, Branding } from "../types";
 import { authApi } from "../services/api";
+import { applyTheme } from "../utils/colors";
 
 const DEFAULT_BRANDING: Branding = {
   brand_name: "RecoFace",
   brand_subtitle: "Monitorando vidas",
   brand_logo_url: null,
+  primary_color: "#1e3a5f",
+  secondary_color: "#4a72b3",
 };
 
 interface AuthContextType {
@@ -29,9 +32,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadBranding = async () => {
     try {
       const res = await authApi.branding();
-      setBranding(res.data);
+      const data = { ...DEFAULT_BRANDING, ...res.data };
+      setBranding(data);
+      applyTheme(data.primary_color, data.secondary_color);
     } catch {
       setBranding(DEFAULT_BRANDING);
+      applyTheme(DEFAULT_BRANDING.primary_color, DEFAULT_BRANDING.secondary_color);
     }
   };
 

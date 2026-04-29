@@ -28,7 +28,7 @@ export const authApi = {
     api.post("/api/auth/login", { email, password }),
   me: () => api.get("/api/auth/me"),
   branding: () => api.get("/api/auth/branding"),
-  updateBranding: (data: { brand_name?: string; brand_subtitle?: string }) =>
+  updateBranding: (data: { brand_name?: string; brand_subtitle?: string; primary_color?: string; secondary_color?: string }) =>
     api.put("/api/auth/branding", data),
   uploadLogo: (formData: FormData) =>
     api.post("/api/auth/branding/logo", formData, {

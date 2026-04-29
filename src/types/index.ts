@@ -16,6 +16,8 @@ export interface Branding {
   brand_name: string;
   brand_subtitle: string;
   brand_logo_url: string | null;
+  primary_color: string;
+  secondary_color: string;
 }
 
 export interface PersonCategory {

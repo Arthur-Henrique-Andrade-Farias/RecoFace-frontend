@@ -39,6 +39,8 @@ export default function SettingsPage() {
   // ─── Branding ──────────────────────────────────────────────────────────────
   const [brandName, setBrandName] = useState(branding.brand_name);
   const [brandSubtitle, setBrandSubtitle] = useState(branding.brand_subtitle);
+  const [primaryColor, setPrimaryColor] = useState(branding.primary_color);
+  const [secondaryColor, setSecondaryColor] = useState(branding.secondary_color);
   const [brandSaving, setBrandSaving] = useState(false);
   const [brandSuccess, setBrandSuccess] = useState("");
   const [logoUploading, setLogoUploading] = useState(false);
@@ -50,13 +52,20 @@ export default function SettingsPage() {
   useEffect(() => {
     setBrandName(branding.brand_name);
     setBrandSubtitle(branding.brand_subtitle);
+    setPrimaryColor(branding.primary_color);
+    setSecondaryColor(branding.secondary_color);
   }, [branding]);
 
   const handleBrandingSave = async () => {
     setBrandSaving(true);
     setBrandSuccess("");
     try {
-      await authApi.updateBranding({ brand_name: brandName, brand_subtitle: brandSubtitle });
+      await authApi.updateBranding({
+        brand_name: brandName,
+        brand_subtitle: brandSubtitle,
+        primary_color: primaryColor,
+        secondary_color: secondaryColor,
+      });
       await refreshBranding();
       setBrandSuccess("Configurações salvas!");
       setTimeout(() => setBrandSuccess(""), 3000);
@@ -453,20 +462,60 @@ export default function SettingsPage() {
               <p className="text-xs text-slate-400 mt-1">Aparece abaixo do nome na sidebar</p>
             </div>
 
+            {/* Colors */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Cor primária</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={primaryColor}
+                    onChange={(e) => setPrimaryColor(e.target.value)}
+                    className="w-12 h-10 rounded-lg border border-slate-200 cursor-pointer"
+                  />
+                  <input
+                    className="input-field text-sm font-mono"
+                    value={primaryColor}
+                    onChange={(e) => setPrimaryColor(e.target.value)}
+                    placeholder="#1e3a5f"
+                  />
+                </div>
+                <p className="text-xs text-slate-400 mt-1">Sidebar, botões e elementos principais</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Cor secundária</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={secondaryColor}
+                    onChange={(e) => setSecondaryColor(e.target.value)}
+                    className="w-12 h-10 rounded-lg border border-slate-200 cursor-pointer"
+                  />
+                  <input
+                    className="input-field text-sm font-mono"
+                    value={secondaryColor}
+                    onChange={(e) => setSecondaryColor(e.target.value)}
+                    placeholder="#4a72b3"
+                  />
+                </div>
+                <p className="text-xs text-slate-400 mt-1">Acentos, ícones e estados ativos</p>
+              </div>
+            </div>
+
             {/* Preview */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">Pré-visualização</label>
-              <div className="bg-navy-600 rounded-xl p-4 flex items-center gap-3 max-w-xs">
+              <div className="rounded-xl p-4 flex items-center gap-3 max-w-xs" style={{ backgroundColor: primaryColor }}>
                 {logoUrl ? (
                   <img src={logoUrl} alt="" className="w-10 h-10 rounded-xl object-cover" />
                 ) : (
-                  <div className="w-10 h-10 bg-blue-400 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: secondaryColor }}>
                     <ShieldCheckIcon className="w-6 h-6 text-white" />
                   </div>
                 )}
                 <div>
                   <p className="text-white text-lg font-bold">{brandName || "RecoFace"}</p>
-                  <p className="text-navy-200 text-xs">{brandSubtitle || "Monitorando vidas"}</p>
+                  <p className="text-white/70 text-xs">{brandSubtitle || "Monitorando vidas"}</p>
                 </div>
               </div>
             </div>
