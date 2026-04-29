@@ -31,6 +31,12 @@
   .btn-danger {
     @apply bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200;
   }
+  /* Sidebar nav links: hover uses secondary color */
+  .nav-link:not(.nav-link-active):hover {
+    background-color: var(--color-secondary);
+    color: white;
+    opacity: 0.85;
+  }
   .card {
     @apply bg-white rounded-xl shadow-sm border border-slate-100 p-6;
   }

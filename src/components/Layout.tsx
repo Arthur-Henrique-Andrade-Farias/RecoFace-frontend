@@ -91,11 +91,12 @@ export default function Layout() {
             to={to}
             onClick={() => setSidebarOpen(false)}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                isActive
-                  ? "bg-blue-500 text-white"
-                  : "text-navy-100 hover:bg-navy-500 hover:text-white"
+              `nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                isActive ? "nav-link-active text-white" : "text-navy-100"
               }`
+            }
+            style={({ isActive }) =>
+              isActive ? { backgroundColor: branding.secondary_color } : undefined
             }
           >
             <Icon className="w-5 h-5 flex-shrink-0" />
